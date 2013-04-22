@@ -1,0 +1,39 @@
+NAME   = LPC2138_flash
+
+CC      = arm-elf-gcc
+LD      = arm-elf-ld -v
+AR      = arm-elf-ar
+AS      = arm-elf-as
+CP      = arm-elf-objcopy
+OD		= arm-elf-objdump
+
+CFLAGS  = -I./ -c -fno-common -O0 -g -mcpu=arm7tdmi -nostartfiles
+AFLAGS  = -ahls -mapcs-32 -o crt.o
+LFLAGS  =  -Map main.map -T LPC2138_flash.cmd
+CPFLAGS = -O ihex
+ODFLAGS	= -x --syms
+MSG_COMPILING = compiling
+
+all: test
+
+clean:
+	-rm crt.lst *.o
+
+test: main.out
+	@ echo "...copying"
+	$(CP) $(CPFLAGS) main.out main.hex
+	$(OD) $(ODFLAGS) main.out > main.dmp
+
+main.out: crt.o main.o audio.o adc.o system.o LPC2138_flash.cmd 
+	@ echo "..linking"
+	$(LD) $(LFLAGS) -o main.out  crt.o main.o audio.o system.o adc.o
+
+crt.o: crt.s
+	@ echo ".assembling"
+	$(AS) $(AFLAGS) crt.s > crt.lst
+
+# Compile: create object files from C source files.
+%.o : %.c
+	@echo
+	@echo $(MSG_COMPILING) $<
+	$(CC) -c $(CFLAGS) $< -o $@
